@@ -39,6 +39,13 @@ try:
     from urllib.parse import urlencode as _urlencode
 except ImportError:
     from urllib import urlencode as _urlencode
+    
+logging.basicConfig(
+    format='Poloniex:[%(asctime)s] %(message)s', 
+    datefmt="%H:%M:%S",
+    level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 # Possible Commands
 PUBLIC_COMMANDS = [
@@ -101,11 +108,6 @@ class Poloniex(object):
 
         self.MINUTE, self.HOUR, self.DAY, self.WEEK, self.MONTH, self.YEAR
         """
-        # Set wrapper logging level
-        logging.basicConfig(
-                format='[%(asctime)s] %(message)s',
-                datefmt="%H:%M:%S",
-                level=loglevel)
         # Suppress the requests	module logging output
         logging.getLogger("requests").setLevel(loglevel)
         logging.getLogger("urllib3").setLevel(loglevel)
