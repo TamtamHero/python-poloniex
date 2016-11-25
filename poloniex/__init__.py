@@ -28,7 +28,7 @@ from hmac import new as _new
 from hashlib import sha512 as _sha512
 # pip
 from requests import post as _post
-from requests import get as _get
+
 # local
 from .coach import (
     Coach, epoch2UTCstr, epoch2localstr,
@@ -40,17 +40,7 @@ try:
     from urllib.parse import urlencode as _urlencode
 except ImportError:
     from urllib import urlencode as _urlencode
-
-logger = logging.getLogger(__name__)
-# Set module logging level
-logging.basicConfig(format='[%(asctime)s] %(message)s',
-                    datefmt="%H:%M:%S",
-                    level=logging.INFO)
-
-# Suppress the requests	module logging output
-logging.getLogger("requests").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-
+    
 # Possible Commands
 PUBLIC_COMMANDS = ['returnTicker',
                    'return24hVolume',
@@ -99,6 +89,7 @@ class Poloniex(object):
                  Secret=False,
                  timeout=3,
                  coach=False,
+                 loglevel=False,
                  extend=False):
         """
         Key = str api key supplied by Poloniex
@@ -113,6 +104,11 @@ class Poloniex(object):
 
         self.MINUTE, self.HOUR, self.DAY, self.WEEK, self.MONTH, self.YEAR
         """
+        self.logger = logging.getLogger(__name__)
+        if loglevel:
+            logging.getLogger("requests").setLevel(loglevel)
+            logging.getLogger("urllib3").setLevel(loglevel)
+            self.logger.setLevel(loglevel)
         # Call coach, set nonce
         self.apicoach, self.nonce = Coach(), int(time()*1000)
         # Grab keys
@@ -184,7 +180,7 @@ class Poloniex(object):
             # set nonce
             args['nonce'] = self.nonce
             try:
-                # encode arguments for url
+                # encode arguments for signiture
                 postData = _urlencode(args)
                 # sign postData with our Secret
                 sign = _new(self.Secret.encode('utf-8'),
@@ -209,7 +205,7 @@ class Poloniex(object):
         # public?
         elif command in PUBLIC_COMMANDS:
             try:
-                ret = _get('https://poloniex.com/public?'+_urlencode(args),
+                ret = _post('https://poloniex.com/public?'+_urlencode(args),
                             timeout=self.timeout)
             except Exception as e:
                 raise e
@@ -276,7 +272,7 @@ class Poloniex(object):
         if not start:
             start = time()-self.HOUR
         try:
-            ret = _get(
+            ret = _post(
                 'https://poloniex.com/public?'+_urlencode(
                     {'command': 'returnTradeHistory',
                      'currencyPair': str(pair).upper(),
